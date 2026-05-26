@@ -30,6 +30,22 @@
   --shadow-card:  0 8px 32px rgba(0,0,0,0.45);
   --radius:       24px;
   --radius-sm:    14px;
+  --bg-input:     rgba(8,12,26,0.85);
+}
+
+body.light-theme {
+  --bg:           #f4f6fc;
+  --bg-2:         #ffffff;
+  --panel:        rgba(255, 255, 255, 0.75);
+  --panel-hover:  rgba(255, 255, 255, 0.92);
+  --border:       rgba(99, 102, 241, 0.16);
+  --border-glow:  rgba(99, 102, 241, 0.45);
+  --text-1:       #0f172a;
+  --text-2:       #334155;
+  --text-3:       #64748b;
+  --shadow-lg:    0 20px 40px rgba(99,102,241,0.06), 0 4px 12px rgba(99,102,241,0.04);
+  --shadow-card:  0 10px 30px rgba(99,102,241,0.05);
+  --bg-input:     rgba(248, 250, 252, 0.95);
 }
 
 /* ── RESET ──────────────────────────────────────────────────── */

@@ -67,7 +67,7 @@ function readFile(file) {
 }
 
 /* ═══════════════════════════════════════════════════════════ */
-export default function AdminPanel({ items, onSave, onBack, adminProfile, onProfileSave }) {
+export default function AdminPanel({ items, onSave, onBack, adminProfile, onProfileSave, darkMode, onToggleTheme }) {
   const [profile,         setProfile]         = useState(adminProfile);
   const [editingProfile,  setEditingProfile]  = useState(false);
   const [tempProfile,     setTempProfile]     = useState(adminProfile);
@@ -88,6 +88,9 @@ export default function AdminPanel({ items, onSave, onBack, adminProfile, onProf
   const profileFileRef = useRef(null);
   const newItemFileRef = useRef(null);
   const editFileRef    = useRef(null);
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
 
   /* ─ Profile photo ─ */
   async function handleProfilePhoto(e) {
@@ -271,6 +274,17 @@ export default function AdminPanel({ items, onSave, onBack, adminProfile, onProf
           </div>
         </div>
         <button onClick={onBack} style={btnBack}>← Back to Dashboard</button>
+        {onToggleTheme && (
+          <button onClick={onToggleTheme} title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'} style={{
+            padding: '0.45rem 0.7rem',
+            background: 'rgba(99,102,241,0.12)',
+            border: '1px solid rgba(99,102,241,0.3)',
+            borderRadius: 10, color: '#818cf8',
+            fontSize: '0.9rem', fontWeight: 600,
+            cursor: 'pointer', fontFamily: 'inherit',
+            transition: 'all 0.2s',
+          }}>{darkMode ? '☀️' : '🌙'}</button>
+        )}
       </div>
 
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1.25rem' }}>
@@ -352,13 +366,39 @@ export default function AdminPanel({ items, onSave, onBack, adminProfile, onProf
           <SectionTitle icon="📦" label={`Items (${items.length})`} />
         </div>
 
-        {items.length === 0 ? (
-          <div style={{ textAlign:'center', color:'#4d5680', padding:'2.5rem', fontSize:'0.9rem' }}>
-            No items yet. Add your first item above ↑
-          </div>
-        ) : (
+        {/* Search Field */}
+        <div style={{ marginBottom:'1rem', position:'relative' }}>
+          <input
+            style={{ ...inp, paddingLeft:'2.5rem' }}
+            placeholder="🔍 Search items by name..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              style={{
+                position:'absolute', right:12, top:'50%', transform:'translateY(-50%)',
+                background:'rgba(244,63,94,0.15)', border:'1px solid rgba(244,63,94,0.3)',
+                borderRadius:8, color:'#f43f5e', fontSize:'0.7rem', fontWeight:700,
+                cursor:'pointer', fontFamily:'inherit', padding:'0.25rem 0.5rem',
+              }}
+            >✕ Clear</button>
+          )}
+        </div>
+
+        {(() => {
+          const filtered = items.filter(item =>
+            item.name.toLowerCase().includes(searchQuery.toLowerCase())
+          );
+          if (filtered.length === 0) return (
+            <div style={{ textAlign:'center', color:'#4d5680', padding:'2.5rem', fontSize:'0.9rem' }}>
+              {searchQuery ? `No items matching "${searchQuery}"` : 'No items yet. Add your first item above ↑'}
+            </div>
+          );
+          return (
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(190px, 1fr))', gap:'1rem' }}>
-            {items.map(item => {
+            {filtered.map(item => {
               const isEditing = editingItemId === item.id;
               return (
                 <div key={item.id} style={{ background:'rgba(8,12,26,0.75)', border:'1px solid rgba(99,102,241,0.15)', borderRadius:18, overflow:'hidden', position:'relative' }}>
@@ -451,7 +491,8 @@ export default function AdminPanel({ items, onSave, onBack, adminProfile, onProf
               );
             })}
           </div>
-        )}
+          );
+        })()}
       </div>
 
       <style>{`

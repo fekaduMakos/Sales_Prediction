@@ -193,6 +193,19 @@ export default function App() {
     catch { return DEFAULT_PROFILE; }
   });
 
+  /* ── Theme state (dark / light) ── */
+  const [darkMode, setDarkMode] = useState(() => {
+    try {
+      const saved = localStorage.getItem('mp_theme');
+      return saved ? saved === 'dark' : true; // default dark
+    } catch { return true; }
+  });
+
+  useEffect(() => {
+    document.body.classList.toggle('light-theme', !darkMode);
+    localStorage.setItem('mp_theme', darkMode ? 'dark' : 'light');
+  }, [darkMode]);
+
   /* ── View state ── */
   const [view, setView]           = useState('dashboard'); // 'dashboard' | 'admin'
   const [showLogin, setShowLogin] = useState(false);
@@ -290,6 +303,8 @@ export default function App() {
           onSave={handleAdminSave}
           onProfileSave={handleProfileSave}
           onBack={() => { setView('dashboard'); setCurrentIndex(0); setImageLoaded(false); }}
+          darkMode={darkMode}
+          onToggleTheme={() => setDarkMode(d => !d)}
         />
       </>
     );
@@ -403,9 +418,21 @@ export default function App() {
               <div style={{ fontSize: '0.65rem', color: '#4d5680' }}>Administrator</div>
             </div>
             <button
+              onClick={() => setDarkMode(d => !d)}
+              title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              style={{
+                padding: '0.45rem 0.7rem',
+                background: 'rgba(99,102,241,0.12)',
+                border: '1px solid rgba(99,102,241,0.3)',
+                borderRadius: 10, color: '#818cf8',
+                fontSize: '0.9rem', fontWeight: 600,
+                cursor: 'pointer', fontFamily: 'inherit',
+                transition: 'all 0.2s',
+              }}
+            >{darkMode ? '☀️' : '🌙'}</button>
+            <button
               onClick={() => setShowLogin(true)}
               style={{
-                marginLeft: '0.25rem',
                 padding: '0.45rem 0.9rem',
                 background: 'rgba(99,102,241,0.12)',
                 border: '1px solid rgba(99,102,241,0.3)',

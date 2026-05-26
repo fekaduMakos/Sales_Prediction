@@ -130,7 +130,7 @@ body .grid-overlay {
   justify-content: space-between;
   padding: 1rem 1.75rem;
   margin-bottom: 1.5rem;
-  background: rgba(8, 12, 26, 0.85);
+  background: var(--bg-2);
   backdrop-filter: blur(20px);
   border: 1px solid var(--border);
   border-radius: var(--radius);

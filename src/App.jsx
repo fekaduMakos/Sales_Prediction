@@ -197,8 +197,8 @@ export default function App() {
   const [darkMode, setDarkMode] = useState(() => {
     try {
       const saved = localStorage.getItem('mp_theme');
-      return saved ? saved === 'dark' : true; // default dark
-    } catch { return true; }
+      return saved ? saved === 'dark' : false; // default light
+    } catch { return false; }
   });
 
   useEffect(() => {
@@ -428,8 +428,22 @@ export default function App() {
                 fontSize: '0.9rem', fontWeight: 600,
                 cursor: 'pointer', fontFamily: 'inherit',
                 transition: 'all 0.2s',
+                marginRight: '0.4rem',
               }}
             >{darkMode ? '☀️' : '🌙'}</button>
+            <button
+              onClick={() => { localStorage.removeItem('mp_theme'); setDarkMode(false); }}
+              title='Reset to Light Mode'
+              style={{
+                padding: '0.45rem 0.7rem',
+                background: 'rgba(99,102,241,0.05)',
+                border: '1px solid rgba(99,102,241,0.2)',
+                borderRadius: 10, color: '#818cf8',
+                fontSize: '0.75rem', fontWeight: 500,
+                cursor: 'pointer', fontFamily: 'inherit',
+                transition: 'all 0.2s',
+              }}
+            >Reset Light</button>
             <button
               onClick={() => setShowLogin(true)}
               style={{

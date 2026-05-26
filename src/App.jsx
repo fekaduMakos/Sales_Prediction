@@ -1,327 +1,551 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import AdminPanel from './AdminPanel.jsx';
 
-const marketDataArray = [
+/* ── DEFAULT DATA ─────────────────────────────────────────────── */
+const DEFAULT_ITEMS = [
   {
-    target_asset: "White Teff (Quintal)",
-    image_url: "/white_teff_grains_1779735686478.png",
-    current_price: "10,500 ETB",
-    market_trend: "UP",
-    predicted_change_percent: "+2.9%",
-    confidence_score: "88%",
-    amharic_insight: "የነጭ ጤፍ ዋጋ በሚቀጥሉት 48 ሰዓታት ውስጥ የ2.9% ጭማሪ ያሳያል ተብሎ ይጠበቃል። ይህ የሆነው በበዓል ገበያ ምክንያት የፍላጎት መጠን በመጨመሩ ነው።",
-    english_summary: "Holiday demand driving price up."
+    id: 1, name: "Macaroni & Pasta (500g)",
+    image: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/%28Pasta%29_by_David_Adam_Kess_%28pic.2%29.jpg/960px-%28Pasta%29_by_David_Adam_Kess_%28pic.2%29.jpg",
+    current_price: "140 ETB", market_trend: "STABLE",
+    predicted_change_percent: "0.0%", confidence_score: "95%",
+    amharic_insight: "የፓስታ እና ማካሮኒ አቅርቦት የተረጋጋ በመሆኑ ዋጋው ላይ ምንም አይነት ለውጥ አይጠበቅም።",
+    english_summary: "Stable supply chain.", fetched: true,
   },
   {
-    target_asset: "Holiday Sheep / Beg",
-    image_url: "/holiday_sheep_1779737081976.png",
-    current_price: "12,000 ETB",
-    market_trend: "UP",
-    predicted_change_percent: "+8.5%",
-    confidence_score: "95%",
-    amharic_insight: "በበዓል ምክንያት የበግ ፍላጎት በከፍተኛ ሁኔታ ስለጨመረ ዋጋው እስከ 8.5% ሊጨምር እንደሚችል መረጃዎች ያሳያሉ።",
-    english_summary: "Peak holiday demand for livestock."
+    id: 2, name: "Bottled Water (2 Liters)",
+    image: "https://upload.wikimedia.org/wikipedia/commons/0/02/Stilles_Mineralwasser.jpg",
+    current_price: "55 ETB", market_trend: "STABLE",
+    predicted_change_percent: "0.0%", confidence_score: "98%",
+    amharic_insight: "የታሸገ ውሃ ዋጋ የተረጋጋ ነው፣ በገበያ ውስጥ በቂ አቅርቦት አለ።",
+    english_summary: "Abundant stock available.", fetched: true,
   },
   {
-    target_asset: "Spiced Butter / Niter Kibbeh (Kg)",
-    image_url: "/ethiopian_butter_1779737395921.png",
-    current_price: "1,100 ETB",
-    market_trend: "UP",
-    predicted_change_percent: "+4.1%",
-    confidence_score: "90%",
-    amharic_insight: "የንጥር ቅቤ አቅርቦት አነስተኛ በመሆኑ እና የፍላጎት መጨመር ዋጋውን ከፍ ሊያደርገው ችሏል።",
-    english_summary: "Supply shortage increasing prices."
+    id: 3, name: "Cooking Oil (3 Liters)",
+    image: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/Olive_oil_from_Oneglia.jpg/960px-Olive_oil_from_Oneglia.jpg",
+    current_price: "1,350 ETB", market_trend: "UP",
+    predicted_change_percent: "+4.2%", confidence_score: "85%",
+    amharic_insight: "ከውጭ የሚገቡ የዘይት ምርቶች በመጨመራቸው ዋጋው በትንሹ ይቀንሳል ተብሎ ይጠበቃል።",
+    english_summary: "Import surplus reducing price.", fetched: true,
   },
   {
-    target_asset: "Red Onions (Kilo)",
-    image_url: "/red_onions_market_1779736200081.png",
-    current_price: "95 ETB",
-    market_trend: "DOWN",
-    predicted_change_percent: "-5.2%",
-    confidence_score: "85%",
-    amharic_insight: "የቀይ ሽንኩርት አቅርቦት በገበያ ላይ በመጨመሩ ምክንያት ዋጋው በ5.2% ይቀንሳል ተብሎ ይገመታል።",
-    english_summary: "Oversupply reducing retail prices."
+    id: 4, name: "Wheat Flour / Fino (5 Kg)",
+    image: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Flour_1.jpg/960px-Flour_1.jpg",
+    current_price: "680 ETB", market_trend: "UP",
+    predicted_change_percent: "+3.5%", confidence_score: "82%",
+    amharic_insight: "የፍርኖ ዱቄት ፍላጎት ከበዓል ጋር ተያይዞ በመጨመሩ መጠነኛ የዋጋ ጭማሪ ታይቷል።",
+    english_summary: "Holiday baking demand.", fetched: true,
   },
   {
-    target_asset: "Roasted Coffee (Buna) - 1 Kg",
-    image_url: "/roasted_coffee_beans_1779736142602.png",
-    current_price: "1,200 ETB",
-    market_trend: "STABLE",
-    predicted_change_percent: "0.0%",
-    confidence_score: "92%",
-    amharic_insight: "የቡና ዋጋ በአሁኑ ወቅት የተረጋጋ ሲሆን በሚቀጥሉት ቀናትም ምንም አይነት የዋጋ ለውጥ አይታይም ብለን እንጠብቃለን።",
-    english_summary: "Export supply meeting local demand."
+    id: 5, name: "Packed Sugar (1 Kg)",
+    image: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Sucre_blanc_cassonade_complet_rapadura.jpg/960px-Sucre_blanc_cassonade_complet_rapadura.jpg",
+    current_price: "180 ETB", market_trend: "UP",
+    predicted_change_percent: "+5.0%", confidence_score: "88%",
+    amharic_insight: "በስኳር አቅርቦት ላይ የታየው መዘግየት የችርቻሮ ዋጋውን ከፍ አድርጎታል።",
+    english_summary: "Minor distribution delays.", fetched: true,
   },
   {
-    target_asset: "Live Chicken / Doro",
-    image_url: "/holiday_sheep_1779737081976.png", // fallback image
-    current_price: "1,500 ETB",
-    market_trend: "UP",
-    predicted_change_percent: "+6.0%",
-    confidence_score: "91%",
-    amharic_insight: "የዶሮ ዋጋ በበዓል ገበያ ምክንያት መጠነኛ ጭማሪ በማሳየት ላይ ይገኛል።",
-    english_summary: "High holiday demand."
+    id: 6, name: "Tomato Paste / Salsa (400g)",
+    image: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Tomato_paste_on_spoon.jpg/960px-Tomato_paste_on_spoon.jpg",
+    current_price: "210 ETB", market_trend: "STABLE",
+    predicted_change_percent: "0.0%", confidence_score: "90%",
+    amharic_insight: "የሳልሳ (የቲማቲም ድልህ) ገበያ የተረጋጋ እና በቂ ምርት ያለበት ነው።",
+    english_summary: "Prices remain stable.", fetched: true,
   },
   {
-    target_asset: "Fresh Eggs (1 unit)",
-    image_url: "/ethiopian_butter_1779737395921.png", // fallback image
-    current_price: "15 ETB",
-    market_trend: "STABLE",
-    predicted_change_percent: "+0.5%",
-    confidence_score: "80%",
-    amharic_insight: "የእንቁላል ዋጋ የተረጋጋ ሁኔታ ላይ ይገኛል።",
-    english_summary: "Stable market pricing."
+    id: 7, name: "Canned Tuna (185g)",
+    image: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Canned_and_packaged_tuna_on_supermarket_shelves.jpg/960px-Canned_and_packaged_tuna_on_supermarket_shelves.jpg",
+    current_price: "220 ETB", market_trend: "UP",
+    predicted_change_percent: "+6.8%", confidence_score: "87%",
+    amharic_insight: "የታሸገ ቱና ከውጭ የሚገባ በመሆኑ የምንዛሬ ለውጥ በዋጋው ላይ ጭማሪ አምጥቷል።",
+    english_summary: "Currency impact on imports.", fetched: true,
   },
   {
-    target_asset: "Garlic / Netch Shinkurt (Kg)",
-    image_url: "/red_onions_market_1779736200081.png", // fallback image
-    current_price: "350 ETB",
-    market_trend: "UP",
-    predicted_change_percent: "+2.1%",
-    confidence_score: "84%",
-    amharic_insight: "የነጭ ሽንኩርት አቅርቦት በመቀነሱ ምክንያት የዋጋ ጭማሪ ታይቷል።",
-    english_summary: "Moderate price increase."
+    id: 8, name: "Roasted Packed Coffee (500g)",
+    image: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Roasted_coffee_beans.jpg/960px-Roasted_coffee_beans.jpg",
+    current_price: "850 ETB", market_trend: "STABLE",
+    predicted_change_percent: "+1.2%", confidence_score: "91%",
+    amharic_insight: "የታሸገ ቡና ዋጋ ምንም አይነት ጉልህ ለውጥ አላሳየም።",
+    english_summary: "Consistent local supply.", fetched: true,
   },
   {
-    target_asset: "Berbere Spice (Kg)",
-    image_url: "/roasted_coffee_beans_1779736142602.png", // fallback image
-    current_price: "750 ETB",
-    market_trend: "STABLE",
-    predicted_change_percent: "0.0%",
-    confidence_score: "89%",
-    amharic_insight: "የበርበሬ ዋጋ ምንም ለውጥ ሳያሳይ እንደቀጠለ ነው።",
-    english_summary: "Prices remain stable."
+    id: 9, name: "Powdered Milk (400g)",
+    image: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/Milk_powder_cropped.jpg/960px-Milk_powder_cropped.jpg",
+    current_price: "1,150 ETB", market_trend: "UP",
+    predicted_change_percent: "+5.5%", confidence_score: "84%",
+    amharic_insight: "የዱቄት ወተት አቅርቦት እጥረት በመኖሩ ምክንያት ዋጋው ጨምሯል።",
+    english_summary: "Supply shortage pushing prices.", fetched: true,
   },
   {
-    target_asset: "Cooking Oil (5 Liters)",
-    image_url: "/ethiopian_butter_1779737395921.png", // fallback image
-    current_price: "1,150 ETB",
-    market_trend: "DOWN",
-    predicted_change_percent: "-1.5%",
-    confidence_score: "82%",
-    amharic_insight: "የዘይት አቅርቦት በገበያው ውስጥ በመሻሻሉ ዋጋው መጠነኛ ቅናሽ አሳይቷል።",
-    english_summary: "Slight decrease in price."
+    id: 10, name: "Tea Leaves / Shai (500g)",
+    image: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Longjing_tea_steeping_in_gaiwan.jpg/960px-Longjing_tea_steeping_in_gaiwan.jpg",
+    current_price: "420 ETB", market_trend: "STABLE",
+    predicted_change_percent: "0.0%", confidence_score: "94%",
+    amharic_insight: "የሻይ ቅጠል ምርት በስፋት በመሰራጨቱ ገበያው የተረጋጋ ነው።",
+    english_summary: "Steady distribution.", fetched: true,
   },
   {
-    target_asset: "Wheat / Sende (Quintal)",
-    image_url: "/white_teff_grains_1779735686478.png", // fallback image
-    current_price: "7,500 ETB",
-    market_trend: "STABLE",
-    predicted_change_percent: "+0.2%",
-    confidence_score: "86%",
-    amharic_insight: "የስንዴ ገበያ አሁን ላይ የተረጋጋ ነው።",
-    english_summary: "Market is holding steady."
+    id: 11, name: "Toilet Paper (Pack of 10)",
+    image: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Toiletpapier_%28Gobran111%29.jpg/960px-Toiletpapier_%28Gobran111%29.jpg",
+    current_price: "480 ETB", market_trend: "DOWN",
+    predicted_change_percent: "-2.0%", confidence_score: "89%",
+    amharic_insight: "የሀገር ውስጥ አምራቾች ምርትን በመጨመራቸው የሶፍት ዋጋ በትንሹ ቀንሷል።",
+    english_summary: "Local production scaling up.", fetched: true,
   },
   {
-    target_asset: "Potatoes / Dinich (Kg)",
-    image_url: "/red_onions_market_1779736200081.png", // fallback image
-    current_price: "45 ETB",
-    market_trend: "DOWN",
-    predicted_change_percent: "-3.0%",
-    confidence_score: "75%",
-    amharic_insight: "የድንች ምርት በስፋት ወደ ገበያ በመግባቱ ዋጋው ቀንሷል።",
-    english_summary: "Harvest season oversupply."
+    id: 12, name: "Bath Soap (Pack of 4)",
+    image: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/Handmade_soap_cropped_and_simplified.jpg/960px-Handmade_soap_cropped_and_simplified.jpg",
+    current_price: "280 ETB", market_trend: "STABLE",
+    predicted_change_percent: "0.0%", confidence_score: "92%",
+    amharic_insight: "የገላ ሳሙና ዋጋ ላይ ምንም አይነት አዲስ ለውጥ የለም።",
+    english_summary: "Market is holding steady.", fetched: true,
   },
   {
-    target_asset: "Tomatoes / Timatim (Kg)",
-    image_url: "/red_onions_market_1779736200081.png", // fallback image
-    current_price: "85 ETB",
-    market_trend: "UP",
-    predicted_change_percent: "+5.5%",
-    confidence_score: "88%",
-    amharic_insight: "የቲማቲም አቅርቦት እጥረት ስለገጠመው ዋጋው በከፍተኛ ሁኔታ ጨምሯል።",
-    english_summary: "Shortage pushing prices up."
+    id: 13, name: "Laundry Detergent (1 Kg)",
+    image: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Pralni_pra%C5%A1ek.JPG/960px-Pralni_pra%C5%A1ek.JPG",
+    current_price: "380 ETB", market_trend: "UP",
+    predicted_change_percent: "+2.5%", confidence_score: "86%",
+    amharic_insight: "የልብስ ሳሙና ጥሬ እቃዎች መወደድ ዋጋው ላይ መጠነኛ ጭማሪ አስከትሏል።",
+    english_summary: "Raw material cost increase.", fetched: true,
   },
   {
-    target_asset: "Macaroni / Pasta (Kg)",
-    image_url: "/white_teff_grains_1779735686478.png", // fallback image
-    current_price: "120 ETB",
-    market_trend: "STABLE",
-    predicted_change_percent: "0.0%",
-    confidence_score: "95%",
-    amharic_insight: "የፓስታ እና ማካሮኒ ዋጋ የተረጋጋ ነው።",
-    english_summary: "Stable supply chain."
+    id: 14, name: "Assorted Biscuits (Box)",
+    image: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/Bourbon_and_Custard_Cream.jpeg/960px-Bourbon_and_Custard_Cream.jpeg",
+    current_price: "240 ETB", market_trend: "STABLE",
+    predicted_change_percent: "0.0%", confidence_score: "95%",
+    amharic_insight: "የብስኩት ምርቶች በበቂ ሁኔታ ሱፐርማርኬቶች ውስጥ ይገኛሉ።",
+    english_summary: "Ample shelf stock.", fetched: true,
   },
   {
-    target_asset: "Sugar / Sikuar (Kg)",
-    image_url: "/ethiopian_butter_1779737395921.png", // fallback image
-    current_price: "110 ETB",
-    market_trend: "UP",
-    predicted_change_percent: "+1.2%",
-    confidence_score: "81%",
-    amharic_insight: "የስኳር ስርጭት በመዘግየቱ ምክንያት ትንሽ የዋጋ ለውጥ ታይቷል።",
-    english_summary: "Minor distribution delays."
+    id: 15, name: "Baby Diapers (Jumbo Pack)",
+    image: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Disposablediaper.JPG/960px-Disposablediaper.JPG",
+    current_price: "2,400 ETB", market_trend: "UP",
+    predicted_change_percent: "+8.5%", confidence_score: "83%",
+    amharic_insight: "የህፃናት ዳይፐር ከውጭ በሚገቡ ምርቶች ላይ በተጣለ ታክስ ምክንያት ዋጋው ንሯል።",
+    english_summary: "Import tax adjustments.", fetched: true,
   },
   {
-    target_asset: "Beef / Siga (Kg)",
-    image_url: "/holiday_sheep_1779737081976.png", // fallback image
-    current_price: "1,300 ETB",
-    market_trend: "UP",
-    predicted_change_percent: "+4.5%",
-    confidence_score: "93%",
-    amharic_insight: "በበዓል ምክንያት የስጋ ፍላጎት በከፍተኛ ሁኔታ ጨምሯል።",
-    english_summary: "High demand for holiday."
+    id: 16, name: "Packaged Fruit Juice (1 Liter)",
+    image: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/Orange_juice_1.jpg/960px-Orange_juice_1.jpg",
+    current_price: "190 ETB", market_trend: "STABLE",
+    predicted_change_percent: "0.0%", confidence_score: "90%",
+    amharic_insight: "የታሸገ ጁስ ዋጋ የተረጋጋ ነው፣ ፍላጎቱም መደበኛ ነው።",
+    english_summary: "Normal consumer demand.", fetched: true,
   },
   {
-    target_asset: "Pure Honey / Mar (Kg)",
-    image_url: "/ethiopian_butter_1779737395921.png", // fallback image
-    current_price: "850 ETB",
-    market_trend: "STABLE",
-    predicted_change_percent: "0.0%",
-    confidence_score: "87%",
-    amharic_insight: "የማር ዋጋ በአሁኑ ወቅት ምንም አይነት ለውጥ አላሳየም።",
-    english_summary: "Prices remain stable."
+    id: 17, name: "Table Butter (250g)",
+    image: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/%C5%A0v%C3%A9dsk%C3%BD_kol%C3%A1%C4%8D_naruby_904_%28cropped%29.JPG/960px-%C5%A0v%C3%A9dsk%C3%BD_kol%C3%A1%C4%8D_naruby_904_%28cropped%29.JPG",
+    current_price: "550 ETB", market_trend: "UP",
+    predicted_change_percent: "+3.2%", confidence_score: "88%",
+    amharic_insight: "የገበታ ቅቤ አቅርቦት ማነስ በዋጋው ላይ ትንሽ ጭማሪ አሳይቷል።",
+    english_summary: "Slight supply dip.", fetched: true,
   },
   {
-    target_asset: "Live Goat / Fiyel",
-    image_url: "/holiday_sheep_1779737081976.png", // fallback image
-    current_price: "9,000 ETB",
-    market_trend: "UP",
-    predicted_change_percent: "+7.0%",
-    confidence_score: "92%",
-    amharic_insight: "የፍየል ገበያም እንደ በግ ሁሉ በበዓል ሰሞን ዋጋው ንሯል።",
-    english_summary: "Holiday season spike."
+    id: 18, name: "Breakfast Cereal (500g)",
+    image: "https://upload.wikimedia.org/wikipedia/commons/f/fa/Les_Plantes_Cultivades._Cereals._Imatge_119.jpg",
+    current_price: "620 ETB", market_trend: "STABLE",
+    predicted_change_percent: "0.0%", confidence_score: "86%",
+    amharic_insight: "የኮርንፍሌክስ እና የቁርስ እህሎች ገበያ ምንም ለውጥ አላሳየም።",
+    english_summary: "Prices remain stable.", fetched: true,
   },
   {
-    target_asset: "Shiro Powder (Kg)",
-    image_url: "/roasted_coffee_beans_1779736142602.png", // fallback image
-    current_price: "450 ETB",
-    market_trend: "STABLE",
-    predicted_change_percent: "0.0%",
-    confidence_score: "90%",
-    amharic_insight: "የሽሮ አቅርቦት በቂ በመሆኑ ዋጋው የተረጋጋ ነው።",
-    english_summary: "Steady local supply."
+    id: 19, name: "Strawberry Jam (400g)",
+    image: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/21/Fruits_jam_variants.jpg/960px-Fruits_jam_variants.jpg",
+    current_price: "290 ETB", market_trend: "DOWN",
+    predicted_change_percent: "-3.5%", confidence_score: "79%",
+    amharic_insight: "የሀገር ውስጥ አምራቾች የማርማላታ ምርትን በማብዛታቸው ዋጋው ቀንሷል።",
+    english_summary: "Local production surplus.", fetched: true,
   },
   {
-    target_asset: "Lentils / Misir (Kg)",
-    image_url: "/roasted_coffee_beans_1779736142602.png", // fallback image
-    current_price: "220 ETB",
-    market_trend: "STABLE",
-    predicted_change_percent: "+0.8%",
-    confidence_score: "85%",
-    amharic_insight: "የምስር ዋጋ መጠነኛ ጭማሪ ቢያሳይም በአብዛኛው የተረጋጋ ነው።",
-    english_summary: "Slight variation."
-  }
+    id: 20, name: "Processed Cheese (400g)",
+    image: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8f/Eru_goudkuipje_sambal.jpg/960px-Eru_goudkuipje_sambal.jpg",
+    current_price: "480 ETB", market_trend: "UP",
+    predicted_change_percent: "+2.8%", confidence_score: "85%",
+    amharic_insight: "የቺዝ/አይብ ዋጋ በወተት አቅርቦት ለውጥ ምክንያት በትንሹ ጨምሯል።",
+    english_summary: "Dairy cost fluctuations.", fetched: true,
+  },
 ];
 
-function App() {
+const DEFAULT_PROFILE = { name: 'Administrator', photo: '' };
+const INTERVAL_MS = 10000;
+
+/* ── HELPERS ── */
+function formatTime(d) {
+  return d.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+function formatDate(d) {
+  return d.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+const TREND_COLOR  = { UP: '#10b981', DOWN: '#f43f5e', STABLE: '#64748b' };
+const TREND_ICON   = { UP: '📈', DOWN: '📉', STABLE: '➖' };
+const TREND_LABEL  = { UP: '▲ RISING', DOWN: '▼ FALLING', STABLE: '— STABLE' };
+
+/* ═══════════════════════════════════════════════════════════════ */
+export default function App() {
+  /* ── Persistent state (localStorage) ── */
+  const [items, setItems] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('mp_items')) || DEFAULT_ITEMS; }
+    catch { return DEFAULT_ITEMS; }
+  });
+
+  const [adminProfile, setAdminProfile] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('mp_profile')) || DEFAULT_PROFILE; }
+    catch { return DEFAULT_PROFILE; }
+  });
+
+  /* ── View state ── */
+  const [view, setView]           = useState('dashboard'); // 'dashboard' | 'admin'
+  const [showLogin, setShowLogin] = useState(false);
+  const [password, setPassword]   = useState('');
+  const [loginErr, setLoginErr]   = useState('');
+  const ADMIN_PASS                = 'admin123';
+
+  /* ── Carousel state ── */
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [fade, setFade] = useState(true);
+  const [visible, setVisible]           = useState(false);
+  const [imageLoaded, setImageLoaded]   = useState(false);
+  const [progress, setProgress]         = useState(0);
+  const [clock, setClock]               = useState(new Date());
 
-  // Cycle through items every 10 seconds (10000ms)
+  const progressRef  = useRef(null);
+  const startTimeRef = useRef(0);
+
+  /* ── Clock tick ── */
   useEffect(() => {
-    const timer = setInterval(() => {
-      setFade(false); // Trigger fade out
-      setTimeout(() => {
-        setCurrentIndex((prevIndex) => (prevIndex + 1) % marketDataArray.length);
-        setFade(true); // Trigger fade in
-      }, 500); // 500ms delay for fade transition
-    }, 10000); 
-
-    return () => clearInterval(timer);
+    const t = setInterval(() => setClock(new Date()), 1000);
+    return () => clearInterval(t);
   }, []);
 
-  const data = marketDataArray[currentIndex];
-  
-  const trendColorHex = data.market_trend === 'UP' ? '#2ECC71' : 
-                        data.market_trend === 'DOWN' ? '#E74C3C' : '#7F8C8D';
+  /* ── goTo ── */
+  const goTo = useCallback((idx) => {
+    setVisible(false);
+    setImageLoaded(false);
+    setTimeout(() => {
+      setCurrentIndex(idx);
+      setProgress(0);
+      startTimeRef.current = Date.now();
+    }, 420);
+  }, []);
 
-  const trendClass = data.market_trend === 'UP' ? 'trend-up' : 
-                     data.market_trend === 'DOWN' ? 'trend-down' : 'trend-stable';
+  const goNext = useCallback(() => goTo((currentIndex + 1) % items.length), [currentIndex, goTo, items.length]);
+  const goPrev = useCallback(() => goTo((currentIndex - 1 + items.length) % items.length), [currentIndex, goTo, items.length]);
+
+  /* ── Auto-advance ── */
+  useEffect(() => {
+    if (view !== 'dashboard' || items.length === 0) return;
+    const t = setInterval(goNext, INTERVAL_MS);
+    return () => clearInterval(t);
+  }, [goNext, view, items.length]);
+
+  /* ── Progress bar RAF ── */
+  useEffect(() => {
+    if (view !== 'dashboard') return;
+    startTimeRef.current = Date.now();
+    const tick = () => {
+      const pct = Math.min(((Date.now() - startTimeRef.current) / INTERVAL_MS) * 100, 100);
+      setProgress(pct);
+      if (pct < 100) progressRef.current = requestAnimationFrame(tick);
+    };
+    progressRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(progressRef.current);
+  }, [currentIndex, view]);
+
+  /* ── Admin save ── */
+  function handleAdminSave({ profile, items: newItems }) {
+    const mapped = newItems.map(i => ({ ...i, name: i.name }));
+    setItems(mapped);
+    setAdminProfile(profile);
+    localStorage.setItem('mp_items', JSON.stringify(mapped));
+    localStorage.setItem('mp_profile', JSON.stringify(profile));
+    setCurrentIndex(0);
+    setImageLoaded(false);
+    setVisible(false);
+  }
+
+  function handleProfileSave(p) {
+    setAdminProfile(p);
+    localStorage.setItem('mp_profile', JSON.stringify(p));
+  }
+
+  /* ── Login ── */
+  function tryLogin() {
+    if (password === ADMIN_PASS) {
+      setShowLogin(false);
+      setPassword('');
+      setLoginErr('');
+      setView('admin');
+    } else {
+      setLoginErr('Incorrect password. Try: admin123');
+    }
+  }
+
+  /* ── Render: Admin view ── */
+  if (view === 'admin') {
+    return (
+      <>
+        <div className="grid-overlay" />
+        <AdminPanel
+          items={items}
+          adminProfile={adminProfile}
+          onSave={handleAdminSave}
+          onProfileSave={handleProfileSave}
+          onBack={() => { setView('dashboard'); setCurrentIndex(0); setImageLoaded(false); }}
+        />
+      </>
+    );
+  }
+
+  /* ── Render: Dashboard ── */
+  const displayItems = items.filter(i => i.fetched !== false || i.current_price);
+  if (displayItems.length === 0) {
+    return (
+      <>
+        <div className="grid-overlay" />
+        <div style={{ textAlign: 'center', color: '#4d5680', padding: '4rem' }}>
+          No items configured. <button onClick={() => setView('admin')} style={{ color: '#818cf8', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Open Admin Panel</button>
+        </div>
+      </>
+    );
+  }
+
+  const safeIndex = Math.min(currentIndex, displayItems.length - 1);
+  const data  = displayItems[safeIndex];
+  const color = TREND_COLOR[data.market_trend] || '#64748b';
+  const trendClass = `trend-${(data.market_trend || 'STABLE').toLowerCase()}`;
 
   return (
     <>
-      <div className={`glass-panel main-carousel-card ${trendClass}`} style={{ position: 'relative' }}>
-        
-        <header className="dashboard-header" style={{ opacity: fade ? 1 : 0, transition: 'opacity 0.5s ease' }}>
-          <div className="dashboard-title">
-            <h1>{data.target_asset}</h1>
-            <p>Market Prediction Dashboard • Auto-updating ({currentIndex + 1} of {marketDataArray.length})</p>
-          </div>
-          <div className="summary-badge" style={{ color: trendColorHex }}>
-            {data.english_summary}
-          </div>
-        </header>
+      <div className="grid-overlay" />
 
-        <div className="card-content-wrapper" style={{ opacity: fade ? 1 : 0, transition: 'opacity 0.5s ease', transform: fade ? 'translateX(0)' : 'translateX(-20px)' }}>
-          
-          {/* Photo Section */}
-          <div className="image-section glass-panel" style={{ padding: 0 }}>
-            <img src={data.image_url} alt={data.target_asset} />
-          </div>
-
-          {/* Data Section */}
-          <div className="data-section">
-            <div className="metrics-grid">
-              <div className="metric-card glass-panel">
-                <h3>Current Price</h3>
-                <div className="value" style={{ color: 'var(--text-primary)', fontSize: '2rem' }}>
-                  {data.current_price}
-                </div>
-              </div>
-              <div className="metric-card glass-panel">
-                <h3>Predicted Change</h3>
-                <div className="value" style={{ color: trendColorHex }}>
-                  {data.predicted_change_percent}
-                </div>
-              </div>
+      {/* ── Login Modal ── */}
+      {showLogin && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 999,
+          background: 'rgba(4,5,15,0.85)', backdropFilter: 'blur(10px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{
+            background: 'rgba(12,18,38,0.95)', border: '1px solid rgba(99,102,241,0.3)',
+            borderRadius: 24, padding: '2rem', width: 340,
+            boxShadow: '0 25px 60px rgba(0,0,0,0.7)',
+          }}>
+            <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🔐</div>
+              <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#eef1ff' }}>Admin Access</div>
+              <div style={{ fontSize: '0.78rem', color: '#4d5680', marginTop: 4 }}>Enter password to continue</div>
             </div>
-
-            <div className="metrics-grid" style={{ marginBottom: '1.5rem' }}>
-              <div className="metric-card glass-panel">
-                <h3>Market Trend</h3>
-                <div className="value" style={{ color: trendColorHex }}>
-                  {data.market_trend}
-                </div>
-              </div>
-              <div className="metric-card glass-panel">
-                <h3>AI Confidence</h3>
-                <div className="value" style={{ color: 'var(--text-primary)' }}>
-                  {data.confidence_score}
-                </div>
-              </div>
-            </div>
-
-            <div className="insight-container glass-panel" style={{ flex: 1, justifyContent: 'center' }}>
-              <div className="insight-header">
-                <div className="insight-icon">
-                  {data.market_trend === 'UP' ? '📈' : data.market_trend === 'DOWN' ? '📉' : '➖'}
-                </div>
-                <h2 style={{ fontSize: '1.2rem', color: 'var(--text-secondary)' }}>AI Engine Insight</h2>
-              </div>
-              <div className="insight-content">
-                <p className="amharic-text">{data.amharic_insight}</p>
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-        {/* Carousel Indicators */}
-        <div className="carousel-indicators" style={{ flexWrap: 'wrap' }}>
-          {marketDataArray.map((_, idx) => (
-            <div 
-              key={idx} 
-              className={`indicator ${idx === currentIndex ? 'active' : ''}`}
-              onClick={() => {
-                setFade(false);
-                setTimeout(() => {
-                  setCurrentIndex(idx);
-                  setFade(true);
-                }, 500);
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={e => { setPassword(e.target.value); setLoginErr(''); }}
+              onKeyDown={e => e.key === 'Enter' && tryLogin()}
+              autoFocus
+              style={{
+                width: '100%', padding: '0.75rem 1rem',
+                background: 'rgba(8,12,26,0.9)', border: `1px solid ${loginErr ? '#f43f5e' : 'rgba(99,102,241,0.25)'}`,
+                borderRadius: 12, color: '#eef1ff', fontSize: '0.9rem',
+                fontFamily: 'inherit', outline: 'none', marginBottom: '0.75rem',
               }}
-              title={marketDataArray[idx].target_asset}
-            ></div>
-          ))}
+            />
+            {loginErr && <div style={{ color: '#f43f5e', fontSize: '0.78rem', marginBottom: '0.75rem' }}>{loginErr}</div>}
+            <div style={{ display: 'flex', gap: '0.6rem' }}>
+              <button onClick={tryLogin} style={{
+                flex: 1, padding: '0.7rem',
+                background: 'linear-gradient(135deg,#6366f1,#a855f7)',
+                border: 'none', borderRadius: 12, color: '#fff',
+                fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer', fontFamily: 'inherit',
+              }}>Login</button>
+              <button onClick={() => { setShowLogin(false); setPassword(''); setLoginErr(''); }} style={{
+                padding: '0.7rem 1rem',
+                background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)',
+                borderRadius: 12, color: '#818cf8', cursor: 'pointer', fontFamily: 'inherit',
+              }}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── TOP NAV BAR ── */}
+      <nav className="topbar glass">
+        <div className="topbar-brand">
+          <div className="brand-icon">🛒</div>
+          <div>
+            <div className="brand-name">Nati Supermarket</div>
+            <div className="brand-sub">Price Intelligence & Analytics • Ethiopia</div>
+          </div>
         </div>
 
+        <div className="topbar-right">
+          <div className="live-badge"><span className="live-dot" />Live</div>
+
+          <div className="clock-widget">
+            <div className="clock-time">{formatTime(clock)}</div>
+            <div className="clock-date">{formatDate(clock)}</div>
+          </div>
+
+          {/* Admin profile + button */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            {/* Avatar */}
+            <div style={{
+              width: 36, height: 36, borderRadius: '50%',
+              background: adminProfile.photo ? 'none' : 'linear-gradient(135deg,#6366f1,#a855f7)',
+              border: '2px solid rgba(99,102,241,0.5)',
+              overflow: 'hidden', display: 'flex', alignItems: 'center',
+              justifyContent: 'center', fontSize: '1rem', flexShrink: 0,
+            }}>
+              {adminProfile.photo
+                ? <img src={adminProfile.photo} alt="admin" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : '👤'}
+            </div>
+            <div style={{ lineHeight: 1.2 }}>
+              <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#eef1ff' }}>{adminProfile.name || 'Admin'}</div>
+              <div style={{ fontSize: '0.65rem', color: '#4d5680' }}>Administrator</div>
+            </div>
+            <button
+              onClick={() => setShowLogin(true)}
+              style={{
+                marginLeft: '0.25rem',
+                padding: '0.45rem 0.9rem',
+                background: 'rgba(99,102,241,0.12)',
+                border: '1px solid rgba(99,102,241,0.3)',
+                borderRadius: 10, color: '#818cf8',
+                fontSize: '0.75rem', fontWeight: 600,
+                cursor: 'pointer', fontFamily: 'inherit',
+                transition: 'all 0.2s',
+              }}
+            >⚙️ Admin</button>
+          </div>
+        </div>
+      </nav>
+
+      {/* ── MAIN CARD ── */}
+      <div
+        className={`glass main-card ${trendClass}`}
+        style={{
+          opacity: visible && imageLoaded ? 1 : 0,
+          transform: visible && imageLoaded ? 'translateY(0)' : 'translateY(14px)',
+          transition: 'opacity 0.45s ease, transform 0.45s ease',
+        }}
+      >
+        <div className="trend-strip" />
+
+        <div className="progress-bar-track">
+          <div className="progress-bar-fill" style={{ width: `${progress}%` }} />
+        </div>
+
+        <div className="product-header">
+          <div className="product-title-block">
+            <h1>{data.name}</h1>
+            <p className="product-subtitle">
+              Supermarket Price Intelligence &nbsp;•&nbsp; Item {safeIndex + 1} of {displayItems.length}
+            </p>
+          </div>
+          <div className="trend-pill">
+            <span>{TREND_ICON[data.market_trend]}</span>
+            <span>{TREND_LABEL[data.market_trend]}</span>
+          </div>
+        </div>
+
+        <div className="content-grid">
+          {/* Image */}
+          <div className="image-panel">
+            <img
+              key={data.image || data.image_url}
+              src={data.image || data.image_url}
+              alt={data.name}
+              onLoad={() => { setImageLoaded(true); setVisible(true); }}
+              onError={() => { setImageLoaded(true); setVisible(true); }}
+              style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', opacity: imageLoaded ? 1 : 0, transition: 'opacity 0.5s' }}
+            />
+            {!imageLoaded && (
+              <div className="image-loading">
+                <div className="spinner" />
+                <span>Loading…</span>
+              </div>
+            )}
+            {imageLoaded && (
+              <div className="price-badge">
+                <div className="price-label">Current Price</div>
+                <div className="price-value" style={{ color }}>{data.current_price}</div>
+              </div>
+            )}
+          </div>
+
+          {/* Data */}
+          <div className="data-panel">
+            <div className="metrics-row">
+              <div className="metric-card">
+                <div className="metric-label">Predicted Change</div>
+                <div className="metric-value" style={{ color }}>{data.predicted_change_percent}</div>
+              </div>
+              <div className="metric-card">
+                <div className="metric-label">Market Trend</div>
+                <div className="metric-value" style={{ color }}>{data.market_trend}</div>
+              </div>
+              <div className="metric-card">
+                <div className="metric-label">AI Confidence</div>
+                <div className="metric-value" style={{ color: '#818cf8' }}>{data.confidence_score}</div>
+              </div>
+            </div>
+
+            <div className="insight-block">
+              <div className="insight-heading">
+                <div className="insight-icon-wrap">{TREND_ICON[data.market_trend]}</div>
+                <span className="insight-label">AI Engine Insight</span>
+              </div>
+              <p className="amharic-text">{data.amharic_insight}</p>
+            </div>
+
+            <div className="insight-block" style={{ padding: '0.9rem 1.25rem', flexShrink: 0 }}>
+              <div className="insight-heading" style={{ marginBottom: 0 }}>
+                <div className="insight-icon-wrap" style={{ fontSize: '0.85rem' }}>📊</div>
+                <span className="insight-label">Summary</span>
+                <span style={{ marginLeft: 'auto', fontSize: '0.85rem', color: 'var(--text-2)', fontWeight: 400 }}>
+                  {data.english_summary}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="carousel-footer">
+          <span className="carousel-count">
+            {String(safeIndex + 1).padStart(2, '0')} / {String(displayItems.length).padStart(2, '0')}
+          </span>
+          <div className="indicators">
+            {displayItems.map((_, idx) => (
+              <button
+                key={idx}
+                className={`indicator ${idx === safeIndex ? 'active' : ''}`}
+                onClick={() => goTo(idx)}
+                title={displayItems[idx].name}
+              />
+            ))}
+          </div>
+          <div className="carousel-nav">
+            <button className="nav-btn" onClick={goPrev}>‹</button>
+            <button className="nav-btn" onClick={goNext}>›</button>
+          </div>
+        </div>
       </div>
-      
-      <div className="system-status">
-        <div className="status-dot active"></div>
-        <span>AI Engine: Live Streaming {marketDataArray.length} Assets (ETB Market)</span>
-      </div>
+
+      {/* ── STATUS BAR ── */}
+      <footer className="status-bar">
+        <div className="status-left">
+          <div className="status-item"><span className="status-dot-green" /><span>AI Engine Online</span></div>
+          <div className="status-divider" />
+          <div className="status-item"><span>🇪🇹 ETB Market</span></div>
+          <div className="status-divider" />
+          <div className="status-item"><span>📦 {displayItems.length} Items Tracked</span></div>
+        </div>
+        <div className="status-right">
+          <span>Auto-refresh every 10s</span>
+          <div className="status-divider" />
+          <span>Nati MarketPulse v2.0</span>
+        </div>
+      </footer>
     </>
   );
 }
-
-export default App;
